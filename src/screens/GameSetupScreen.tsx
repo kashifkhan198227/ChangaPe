@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  Alert,
 } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/theme';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../engine/BoardLayout';
@@ -53,27 +52,17 @@ export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupSc
 
   const cyclePlayerType = (index: number) => {
     const current = playerTypes[index];
-    const currentIdx = PLAYER_TYPES.indexOf(current);
-    const available = numPlayers > index
-      ? PLAYER_TYPES.filter(t => t !== 'none')
-      : PLAYER_TYPES;
+    // Build list of types the user can actually pick right now
+    const available = PLAYER_TYPES.filter(t => {
+      if (index >= numPlayers) return true; // inactive slot: all types valid
+      if (t === 'none') return false;       // active slot: can't disable
+      if (PRO_TYPES.includes(t)) return hasAIPro; // Pro types only if unlocked
+      return true;
+    });
+    const currentIdx = available.indexOf(current);
     const nextIdx = (currentIdx + 1) % available.length;
-    const next = available[nextIdx];
-
-    if (PRO_TYPES.includes(next) && !hasAIPro) {
-      Alert.alert(
-        'AI Pro Required',
-        'Medium and Hard AI require the AI Pro upgrade (₹49).',
-        [
-          { text: 'Not Now', style: 'cancel' },
-          { text: 'Unlock AI Pro', onPress: onShop },
-        ]
-      );
-      return;
-    }
-
     const updated = [...playerTypes];
-    updated[index] = next;
+    updated[index] = available[nextIdx];
     setPlayerTypes(updated);
   };
 
@@ -144,6 +133,11 @@ export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupSc
               </TouchableOpacity>
             </View>
           ))}
+          {!hasAIPro && (
+            <TouchableOpacity onPress={onShop} style={styles.proHint}>
+              <Text style={styles.proHintText}>🔒 Tap to unlock Medium & Hard AI</Text>
+            </TouchableOpacity>
+          )}
         </Section>
 
         {/* Rules */}
@@ -325,6 +319,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.warning + '88',
   },
   lockIcon: { fontSize: 11 },
+  proHint: {
+    marginTop: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    alignItems: 'center',
+  },
+  proHintText: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    textDecorationLine: 'underline',
+  },
   typeText: {
     color: COLORS.textSecondary,
     fontSize: 12,
