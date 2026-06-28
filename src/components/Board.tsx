@@ -154,7 +154,7 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
                 height: CELL,
                 backgroundColor: bgColor,
                 borderColor: COLORS.boardLines,
-                borderWidth: 0.5,
+                borderWidth: 1,
               },
               isSafeOuter && styles.safeCell,
               isHighlighted && styles.highlighted,
@@ -172,9 +172,9 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
               <CrossMark size={CELL} color={PLAYER_COLORS[cell.entryPlayer]} thickness={2.5} />
             )}
 
-            {/* X on center square */}
+            {/* X on center square — white so it doesn't clash with Yellow player's gold */}
             {cell.isCenter && (
-              <CrossMark size={CELL - 4} color={COLORS.gold} thickness={3} />
+              <CrossMark size={CELL - 4} color={COLORS.textPrimary} thickness={3} />
             )}
 
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   board: {
     position: 'relative',
     backgroundColor: COLORS.boardBackground,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: COLORS.boardBorder,
     borderRadius: 3,
   },
