@@ -333,15 +333,17 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
     move.wouldFinish; // finishing a pawn always grants bonus roll
   if (grantExtraTurn) newState.extraTurn = true;
 
-  // More pending rolls to use this turn? (check before granting bonus roll)
+  // Use remaining pending rolls (skip any that have no legal moves)
   if (newState.pendingRolls.length > 0) {
-    const legal = computeLegalMoves({ ...newState, phase: 'moving' });
-    if (legal.length > 0) {
-      newState.phase = 'moving';
-      return newState;
+    advanceToUsableRoll(newState);
+    if (newState.phase === 'moving') return newState;
+    // advanceToUsableRoll called advanceTurn — but if we have extraTurn, override
+    if (newState.extraTurn) {
+      newState.phase = 'rolling';
+      newState.diceRolled = false;
+      newState.diceValue = null;
     }
-    // No moves for remaining rolls — skip them
-    newState.pendingRolls = [];
+    return newState;
   }
 
   // If bonus earned, grant a fresh roll now
@@ -428,16 +430,25 @@ export function performRoll(state: GameState): GameState {
     return newState;
   }
 
-  // Done rolling — go to moving phase, player uses pending rolls one by one
-  const legal = computeLegalMoves({ ...newState, phase: 'moving' });
-  if (legal.length === 0) {
-    newState.pendingRolls = [];
-    advanceTurn(newState);
-  } else {
-    newState.phase = 'moving';
-  }
+  // Done rolling — find a pending roll that has legal moves; skip ones that don't
+  advanceToUsableRoll(newState);
 
   return newState;
+}
+
+/** Advance pendingRolls until one has legal moves, or forfeit if none do. */
+function advanceToUsableRoll(state: GameState): void {
+  while (state.pendingRolls.length > 0) {
+    const legal = computeLegalMoves({ ...state, phase: 'moving' });
+    if (legal.length > 0) {
+      state.phase = 'moving';
+      return;
+    }
+    // This roll has no legal moves — skip it
+    state.pendingRolls = state.pendingRolls.slice(1);
+  }
+  // No rolls left with any legal move
+  advanceTurn(state);
 }
 
 export function undoLastMove(state: GameState): GameState | null {

@@ -471,6 +471,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   rollChipTextActive: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
   },
 });
