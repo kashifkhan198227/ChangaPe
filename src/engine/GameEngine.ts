@@ -139,28 +139,32 @@ export function computeLegalMoves(state: GameState): LegalMove[] {
     // Rule 1: must kill at least one opponent before entering inner path
     const wouldEnterInner = pawn.pathIndex < OUTER_RING_LENGTH && newPathIndex >= OUTER_RING_LENGTH;
     if (wouldEnterInner && state.rules.requireCaptureToEnterInner && player.captureCount === 0) {
-      // Pawn loops back around the outer ring
-      const wrappedIndex = newPathIndex - OUTER_RING_LENGTH;
-      const ci = findCapture(state, player.index, wrappedIndex);
-      moves.push({
-        pawnId: pawn.id, fromPathIndex: pawn.pathIndex, toPathIndex: wrappedIndex,
-        wouldCapture: ci !== null && !isSafeSquare(wrappedIndex),
-        capturedPlayer: ci?.playerIndex, capturedPawnId: ci?.pawnId, wouldFinish: false,
-      });
-      continue;
+      // Exception: waive only when ALL opponent pawns are in inner path or finished
+      // (home pawns and outer pawns still count as "not yet in inner")
+      const allOpponentsInInnerOrDone = state.players.every(p =>
+        p.index === player.index ||
+        p.pawns.every(pw =>
+          pw.state === 'finished' ||
+          (pw.state === 'active' && pw.pathIndex >= OUTER_RING_LENGTH)
+        )
+      );
+      if (!allOpponentsInInnerOrDone) {
+        // Pawn loops back around the outer ring
+        const wrappedIndex = newPathIndex - OUTER_RING_LENGTH;
+        const ci = findCapture(state, player.index, wrappedIndex);
+        moves.push({
+          pawnId: pawn.id, fromPathIndex: pawn.pathIndex, toPathIndex: wrappedIndex,
+          wouldCapture: ci !== null && !isSafeSquare(wrappedIndex),
+          capturedPlayer: ci?.playerIndex, capturedPawnId: ci?.pawnId, wouldFinish: false,
+        });
+        continue;
+      }
     }
 
-    // Rule 2: on inner path, overshoot center → loop back to outer ring
+    // Rule 2: on inner path, overshoot center → pawn cannot move (must roll exact)
     const alreadyInner = pawn.pathIndex >= OUTER_RING_LENGTH;
     if (alreadyInner && state.rules.exactRollToFinish && newPathIndex > FINISH_INDEX) {
-      const wrappedIndex = newPathIndex - FINISH_INDEX - 1;
-      const ci = findCapture(state, player.index, wrappedIndex);
-      moves.push({
-        pawnId: pawn.id, fromPathIndex: pawn.pathIndex, toPathIndex: wrappedIndex,
-        wouldCapture: ci !== null && !isSafeSquare(wrappedIndex),
-        capturedPlayer: ci?.playerIndex, capturedPawnId: ci?.pawnId, wouldFinish: false,
-      });
-      continue;
+      continue; // no legal move — pawn stays; player must roll exact Pe(1) to finish
     }
 
     if (!alreadyInner && state.rules.exactRollToFinish && newPathIndex > FINISH_INDEX) continue;
@@ -281,7 +285,7 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
   // Handle capture
   let captured = false;
   if (move.wouldCapture && move.capturedPlayer !== undefined && move.capturedPawnId !== undefined) {
-    const capturedPlayerObj = newState.players[move.capturedPlayer];
+    const capturedPlayerObj = newState.players.find(p => p.index === move.capturedPlayer)!;
     const capturedPawn = capturedPlayerObj.pawns.find(p => p.id === move.capturedPawnId)!;
     record.capturedPawnPathIndex = capturedPawn.pathIndex; // BUG-1 fix
     capturedPawn.state = 'home';
@@ -339,8 +343,9 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
 }
 
 // Traditional turn order: Red(0) → Yellow(3) → Green(2) → Blue(1)
+// For 2-player: Red(bottom) vs Green(top) so they face each other across the board
 const TURN_ORDER: Record<number, number[]> = {
-  2: [0, 1],
+  2: [0, 2],
   3: [0, 3, 2],
   4: [0, 3, 2, 1],
 };
@@ -425,14 +430,14 @@ export function undoLastMove(state: GameState): GameState | null {
   const newState = deepClone(state);
   const last = newState.moveHistory.pop()!;
 
-  const player = newState.players[last.playerIndex];
+  const player = newState.players.find(p => p.index === last.playerIndex)!;
   const pawn = player.pawns.find(p => p.id === last.pawnId)!;
 
   pawn.pathIndex = last.fromPathIndex;
   pawn.state = last.fromPathIndex === -1 ? 'home' : 'active';
 
   if (last.captured && last.capturedPlayer !== undefined && last.capturedPawnId !== undefined) {
-    const capturedPlayer = newState.players[last.capturedPlayer];
+    const capturedPlayer = newState.players.find(p => p.index === last.capturedPlayer)!;
     const capturedPawn = capturedPlayer.pawns.find(p => p.id === last.capturedPawnId)!;
     capturedPawn.state = 'active';
     capturedPawn.pathIndex = last.capturedPawnPathIndex ?? last.toPathIndex; // BUG-1 fix
@@ -455,18 +460,20 @@ export function createInitialGameState(
   aiPlayers: Record<number, 'easy' | 'medium' | 'hard' | 'human'>,
   rules: GameRules = DEFAULT_RULES
 ): GameState {
+  // Use TURN_ORDER to determine which player indices (positions on board) participate
+  const order = TURN_ORDER[numPlayers] ?? [0, 1, 2, 3].slice(0, numPlayers);
   const players: Player[] = [];
-  for (let i = 0; i < numPlayers; i++) {
-    const aiLevel = aiPlayers[i];
+  for (const idx of order) {
+    const aiLevel = aiPlayers[idx] ?? 'human';
     players.push({
-      index: i as PlayerIndex,
+      index: idx as PlayerIndex,
       isAI: aiLevel !== 'human',
       aiLevel: aiLevel !== 'human' ? aiLevel : 'easy',
       captureCount: 0,
-      isActive: i === 0,
+      isActive: idx === order[0],
       pawns: [0, 1, 2, 3].map(id => ({
         id,
-        player: i as PlayerIndex,
+        player: idx as PlayerIndex,
         state: 'home',
         pathIndex: -1,
       })),

@@ -13,8 +13,8 @@ import { usePurchaseStore } from '../store/purchaseStore';
 import Board from '../components/Board';
 import DiceRoller from '../components/DiceRoller';
 import PlayerHUD from '../components/PlayerHUD';
-import { LegalMove } from '../engine/GameEngine';
-import { PLAYER_NAMES } from '../engine/BoardLayout';
+import { LegalMove, Player } from '../engine/GameEngine';
+import { PLAYER_NAMES, PLAYER_COLORS } from '../engine/BoardLayout';
 
 const ROLL_NAMES: Record<number, string> = {
   1: 'Pe', 2: 'Do', 3: 'Teen', 4: 'Changa', 8: 'Ashta',
@@ -69,6 +69,23 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
       clearTimer();
       triggerAIMove();
       return;
+    }
+    // 30s auto-roll timer: if human hasn't thrown the dice yet
+    if (gameState.phase === 'rolling' && !currentPlayer.isAI) {
+      clearTimer();
+      let secs = 30;
+      setSecondsLeft(secs);
+      intervalRef.current = setInterval(() => {
+        secs -= 1;
+        setSecondsLeft(secs);
+        if (secs <= 0) clearTimer();
+      }, 1000);
+      timerRef.current = setTimeout(() => {
+        clearTimer();
+        const s = useGameStore.getState();
+        if (s.gameState?.phase === 'rolling') s.rollDice();
+      }, 30000);
+      return () => clearTimer();
     }
     // Auto-move if only one legal move for human player
     if (gameState.phase === 'moving' && !currentPlayer.isAI && legalMoves.length === 1) {
@@ -188,16 +205,26 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
         />
       </View>
 
-      {/* Board */}
+      {/* Board + treasury strips */}
       <View style={styles.boardContainer}>
-        <Board
-          players={gameState.players}
-          legalMoves={legalMoves}
-          selectedPawnId={selectedPawnId}
-          currentPlayerIndex={gameState.currentPlayerIndex}
-          onCellPress={handleCellPress}
-          onPawnPress={handlePawnPress}
-        />
+        {/* Top strip — Green (index 2) treasury */}
+        <TreasuryStrip players={gameState.players} playerIndex={2} horizontal />
+        <View style={styles.boardRow}>
+          {/* Left strip — Blue (index 1) treasury */}
+          <TreasuryStrip players={gameState.players} playerIndex={1} horizontal={false} />
+          <Board
+            players={gameState.players}
+            legalMoves={legalMoves}
+            selectedPawnId={selectedPawnId}
+            currentPlayerIndex={gameState.currentPlayerIndex}
+            onCellPress={handleCellPress}
+            onPawnPress={handlePawnPress}
+          />
+          {/* Right strip — Yellow (index 3) treasury */}
+          <TreasuryStrip players={gameState.players} playerIndex={3} horizontal={false} />
+        </View>
+        {/* Bottom strip — Red (index 0) treasury */}
+        <TreasuryStrip players={gameState.players} playerIndex={0} horizontal />
       </View>
 
       {/* Dice roller */}
@@ -253,6 +280,45 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
 }
 
 import { PLAYER_CONFIGS, OUTER_RING_LENGTH, OUTER_PATH_COORDS, PLAYER_INNER_PATH } from '../engine/BoardLayout';
+
+// Treasury strip shows 4 finish boxes for a given player (filled = finished pawn)
+function TreasuryStrip({
+  players,
+  playerIndex,
+  horizontal,
+}: {
+  players: Player[];
+  playerIndex: number;
+  horizontal: boolean;
+}) {
+  const player = players.find(p => p.index === playerIndex);
+  // Only render if this player is in the game
+  if (!player) return null;
+  const finishedCount = player.pawns.filter(p => p.state === 'finished').length;
+  const color = PLAYER_COLORS[playerIndex];
+  const BOX = 16;
+  const GAP = 3;
+  const containerStyle: any = horizontal
+    ? { flexDirection: 'row', justifyContent: 'center', gap: GAP, paddingVertical: 4 }
+    : { flexDirection: 'column', justifyContent: 'center', gap: GAP, paddingHorizontal: 4 };
+  return (
+    <View style={containerStyle}>
+      {[0, 1, 2, 3].map(i => (
+        <View
+          key={i}
+          style={{
+            width: BOX,
+            height: BOX,
+            borderRadius: BOX / 2,
+            borderWidth: 1.5,
+            borderColor: color,
+            backgroundColor: i < finishedCount ? color : 'transparent',
+          }}
+        />
+      ))}
+    </View>
+  );
+}
 
 function moveTargetsCell(
   move: LegalMove,
@@ -350,6 +416,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+  },
+  boardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   diceArea: {
     alignItems: 'center',

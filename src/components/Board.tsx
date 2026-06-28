@@ -74,13 +74,8 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
     players.forEach(player => {
       const config = PLAYER_CONFIGS[player.index];
       player.pawns.forEach(pawn => {
-        // Finished pawns stack at center cell
-        if (pawn.state === 'finished') {
-          const arr = map.get('rc_2_2') || [];
-          arr.push(pawn);
-          map.set('rc_2_2', arr);
-          return;
-        }
+        // Finished pawns are shown in the treasury strip — not on the board center
+        if (pawn.state === 'finished') return;
         if (pawn.state !== 'active') return;
         let key: string;
         if (pawn.pathIndex < OUTER_RING_LENGTH) {
@@ -165,9 +160,9 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
               <View style={styles.cowryShell} />
             )}
 
-            {/* X on outer entry squares */}
+            {/* X on outer entry squares — use each player's color */}
             {cell.entryPlayer !== null && (
-              <CrossMark size={CELL} color={COLORS.gold} thickness={2.5} />
+              <CrossMark size={CELL} color={PLAYER_COLORS[cell.entryPlayer]} thickness={2.5} />
             )}
 
             {/* X on center square */}

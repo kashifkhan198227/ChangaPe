@@ -34,6 +34,14 @@ const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
 const PLAYER_TYPES: PlayerType[] = ['human', 'easy', 'medium', 'hard', 'none'];
 const PRO_TYPES: PlayerType[] = ['medium', 'hard'];
 
+// Slot position → board player index (determines color & facing)
+// 2-player: Red(bottom) vs Green(top) so they face each other across the board
+const SETUP_ORDER: Record<2 | 3 | 4, number[]> = {
+  2: [0, 2],
+  3: [0, 3, 2],
+  4: [0, 3, 2, 1],
+};
+
 export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupScreenProps) {
   const { settings } = useSettingsStore();
   const { has } = usePurchaseStore();
@@ -84,9 +92,11 @@ export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupSc
   };
 
   const handleStart = () => {
-    const players: SetupPlayer[] = playerTypes
-      .slice(0, numPlayers)
-      .map((type, index) => ({ index, type }));
+    const order = SETUP_ORDER[numPlayers];
+    const players: SetupPlayer[] = order.map((playerIdx, slot) => ({
+      index: playerIdx,
+      type: playerTypes[slot],
+    }));
     onStart(numPlayers, players, rules);
   };
 
@@ -119,24 +129,21 @@ export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupSc
 
         {/* Player configuration */}
         <Section title="Players">
-          {[0, 1, 2, 3].map(i => {
-            if (i >= numPlayers) return null;
-            return (
-              <View key={i} style={styles.playerRow}>
-                <View style={[styles.colorBadge, { backgroundColor: PLAYER_COLORS[i] }]} />
-                <Text style={styles.playerName}>{PLAYER_NAMES[i]}</Text>
-                <TouchableOpacity
-                  style={[styles.typeButton, PRO_TYPES.includes(playerTypes[i]) && !hasAIPro && styles.typeButtonLocked]}
-                  onPress={() => cyclePlayerType(i)}
-                >
-                  {PRO_TYPES.includes(playerTypes[i]) && !hasAIPro && (
-                    <Text style={styles.lockIcon}>🔒</Text>
-                  )}
-                  <Text style={styles.typeText}>{PLAYER_TYPE_LABELS[playerTypes[i]]}</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+          {SETUP_ORDER[numPlayers].map((playerIdx, slot) => (
+            <View key={slot} style={styles.playerRow}>
+              <View style={[styles.colorBadge, { backgroundColor: PLAYER_COLORS[playerIdx] }]} />
+              <Text style={styles.playerName}>{PLAYER_NAMES[playerIdx]}</Text>
+              <TouchableOpacity
+                style={[styles.typeButton, PRO_TYPES.includes(playerTypes[slot]) && !hasAIPro && styles.typeButtonLocked]}
+                onPress={() => cyclePlayerType(slot)}
+              >
+                {PRO_TYPES.includes(playerTypes[slot]) && !hasAIPro && (
+                  <Text style={styles.lockIcon}>🔒</Text>
+                )}
+                <Text style={styles.typeText}>{PLAYER_TYPE_LABELS[playerTypes[slot]]}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
         </Section>
 
         {/* Rules */}

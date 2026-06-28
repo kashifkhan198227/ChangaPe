@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/theme';
 
 interface HomeScreenProps {
@@ -26,7 +26,11 @@ export default function HomeScreen({
   onAbout,
 }: HomeScreenProps) {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
@@ -72,7 +76,7 @@ export default function HomeScreen({
       </View>
 
       <Text style={styles.footer}>Offline · No Login Required</Text>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -97,13 +101,17 @@ function MenuButton({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  container: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.xl,
-    gap: SPACING.lg,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
   },
   header: {
     alignItems: 'center',
@@ -145,8 +153,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   boardCell: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     backgroundColor: COLORS.innerPath,
     borderRadius: 1,
   },
@@ -189,8 +197,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   primaryButtonText: {
-    color: COLORS.gold,
+    color: COLORS.textDark,  // dark text on gold background for readability
     fontSize: 16,
+    fontWeight: 'bold',
   },
   footer: {
     color: COLORS.textMuted,

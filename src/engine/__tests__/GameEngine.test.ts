@@ -266,7 +266,7 @@ test('C-01: Moving pawn captures lone opponent on outer ring', () => {
   state = setPawn(state, 0, 0, 5);
   state = withCaptures(state, 0, 1);
   // Blue at step 10 â†’ absolute outer (6+10)%16=0 â€” same cell as Red's landing
-  state = setPawn(state, 1, 0, 10);
+  state = setPawn(state, 1, 0, 14); // Green step 14 -> abs 0
   state = withDice(state, 1);
 
   const moves = computeLegalMoves(state);
@@ -274,9 +274,9 @@ test('C-01: Moving pawn captures lone opponent on outer ring', () => {
   expect(captureMove).toBeDefined();
 
   const after = applyMove(state, captureMove!);
-  const bluePawn = after.players[1].pawns.find(p => p.id === 0)!;
-  expect(bluePawn.state).toBe('home');
-  expect(bluePawn.pathIndex).toBe(-1);
+  const greenPawn = after.players[1].pawns.find(p => p.id === 0)!;
+  expect(greenPawn.state).toBe('home');
+  expect(greenPawn.pathIndex).toBe(-1);
 });
 
 test('C-02: 2 stacked opponent pawns on outer â€” no capture', () => {
@@ -299,7 +299,7 @@ test('C-04: Capture increments captureCount', () => {
   let state = makeGame();
   state = setPawn(state, 0, 0, 5);
   state = withCaptures(state, 0, 1);
-  state = setPawn(state, 1, 0, 9);
+  state = setPawn(state, 1, 0, 14); // Green step 14 -> abs 0
   state = withDice(state, 1);
 
   const moves = computeLegalMoves(state);
@@ -314,7 +314,7 @@ test('C-05: Capture grants extra turn when rule enabled', () => {
   let state = makeGameR({ allowExtraTurnOnCapture: true });
   state = setPawn(state, 0, 0, 5);
   state = withCaptures(state, 0, 1);
-  state = setPawn(state, 1, 0, 9);
+  state = setPawn(state, 1, 0, 14); // Green step 14 -> abs 0
   state = withDice(state, 1);
 
   const moves = computeLegalMoves(state);
@@ -330,7 +330,7 @@ test('C-06: No extra turn on capture when rule disabled', () => {
   let state = makeGameR({ allowExtraTurnOnCapture: false });
   state = setPawn(state, 0, 0, 5);
   state = withCaptures(state, 0, 1);
-  state = setPawn(state, 1, 0, 9);
+  state = setPawn(state, 1, 0, 14); // Green step 14 -> abs 0
   state = withDice(state, 1);
 
   const moves = computeLegalMoves(state);
@@ -467,7 +467,7 @@ test('G-03: Turn order for 2 players is Redâ†’Blueâ†’Red', () => {
   let state = makeGame(2);
   expect(state.currentPlayerIndex).toBe(0);
   state = skipTurn(state);
-  expect(state.currentPlayerIndex).toBe(1);
+  expect(state.currentPlayerIndex).toBe(2);
   state = skipTurn(state);
   expect(state.currentPlayerIndex).toBe(0);
 });
@@ -842,7 +842,7 @@ test('D-09: skipTurn resets extraTurn to false', () => {
 test('D-10: Two-player skipTurn cycles correctly 10 times', () => {
   let state = makeGame(2);
   for (let i = 0; i < 10; i++) {
-    const expected = i % 2 === 0 ? 1 : 0;
+    const expected = i % 2 === 0 ? 2 : 0; // 2-player: Red(0) vs Green(2)
     state = skipTurn(state);
     expect(state.currentPlayerIndex).toBe(expected);
   }
@@ -1040,7 +1040,7 @@ test('C-21: Single opponent pawn CAN be captured (non-safe cell)', () => {
   let state = makeGame();
   state = setPawn(state, 0, 0, 6);
   state = withCaptures(state, 0, 1);
-  state = setPawn(state, 1, 0, 11);
+  state = setPawn(state, 1, 0, 15); // Green step 15 -> abs 1
   state = withDice(state, 1);
   const moves = computeLegalMoves(state);
   expect(moves.some(m => m.wouldCapture)).toBe(true);
@@ -1332,7 +1332,7 @@ test('G-17: applyMove advances turn after non-extra non-capture move', () => {
   if (m) {
     const after = applyMove(moved, m);
     if (!after.extraTurn) {
-      expect(after.currentPlayerIndex).toBe(1);
+      expect(after.currentPlayerIndex).toBe(2); // Green
     }
   }
 });
@@ -1351,7 +1351,7 @@ test('G-18: applyMove sets phase to rolling after turn ends', () => {
 
 test('G-19: 2-player game has players 0 and 1', () => {
   const state = makeGame(2);
-  expect(state.players.map(p => p.index).sort()).toEqual([0, 1]);
+  expect(state.players.map(p => p.index).sort()).toEqual([0, 2]);
 });
 
 test('G-20: 4-player game has players 0,1,2,3', () => {
@@ -1626,7 +1626,7 @@ test('ML-01: Full turn: roll -> move -> next player rolling', () => {
   if (m) {
     const after = applyMove(rolled, m);
     if (!after.extraTurn) {
-      expect(after.currentPlayerIndex).toBe(1);
+      expect(after.currentPlayerIndex).toBe(2); // Green
       expect(after.phase).toBe('rolling');
     }
   }
