@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { COLORS } from '../utils/theme';
-import { OUTER_PATH_COORDS, BOARD_SIZE, PLAYER_CONFIGS, PLAYER_COLORS, OUTER_RING_LENGTH } from '../engine/BoardLayout';
+import { OUTER_PATH_COORDS, BOARD_SIZE, PLAYER_CONFIGS, PLAYER_COLORS, OUTER_RING_LENGTH, PLAYER_INNER_PATH } from '../engine/BoardLayout';
 import { Pawn as PawnData, Player } from '../engine/GameEngine';
 import { LegalMove } from '../engine/GameEngine';
 import PawnToken from './PawnToken';
@@ -33,30 +33,6 @@ const HOME_QUADRANTS = [
   { row: 2, col: 4 }, // Yellow — right-middle
 ];
 
-// Inner spiral path per player (pathIndex 16–24, 24 = center/finish)
-// Counter-clockwise spiral through the 8 inner ring cells, entering from player's side
-const PLAYER_INNER_COORDS: Record<number, Record<number, { row: number; col: number }>> = {
-  0: { // RED: 16→11→6→7→8→13→18→17→12
-    16:{row:3,col:1}, 17:{row:2,col:1}, 18:{row:1,col:1},
-    19:{row:1,col:2}, 20:{row:1,col:3}, 21:{row:2,col:3},
-    22:{row:3,col:3}, 23:{row:3,col:2}, 24:{row:2,col:2},
-  },
-  1: { // BLUE: 6→7→8→13→18→17→16→11→12
-    16:{row:1,col:1}, 17:{row:1,col:2}, 18:{row:1,col:3},
-    19:{row:2,col:3}, 20:{row:3,col:3}, 21:{row:3,col:2},
-    22:{row:3,col:1}, 23:{row:2,col:1}, 24:{row:2,col:2},
-  },
-  2: { // GREEN: 8→13→18→17→16→11→6→7→12
-    16:{row:1,col:3}, 17:{row:2,col:3}, 18:{row:3,col:3},
-    19:{row:3,col:2}, 20:{row:3,col:1}, 21:{row:2,col:1},
-    22:{row:1,col:1}, 23:{row:1,col:2}, 24:{row:2,col:2},
-  },
-  3: { // YELLOW: 18→17→16→11→6→7→8→13→12
-    16:{row:3,col:3}, 17:{row:3,col:2}, 18:{row:3,col:1},
-    19:{row:2,col:1}, 20:{row:1,col:1}, 21:{row:1,col:2},
-    22:{row:1,col:3}, 23:{row:2,col:3}, 24:{row:2,col:2},
-  },
-};
 
 
 // Diamond (45°) pawn arrangement — top, left, right, bottom
@@ -110,7 +86,7 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
         if (pawn.pathIndex < OUTER_RING_LENGTH) {
           key = `outer_${(config.outerPathStart + pawn.pathIndex) % OUTER_RING_LENGTH}`;
         } else {
-          const coord = PLAYER_INNER_COORDS[player.index]?.[pawn.pathIndex];
+          const coord = PLAYER_INNER_PATH[player.index]?.[pawn.pathIndex];
           if (!coord) { key = 'inner_unknown'; }
           else {
             // pathIndex 16 lands on the outer ring cell (e.g. Red's (4,2) = outer_10)
@@ -136,7 +112,7 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
       if (m.toPathIndex < OUTER_RING_LENGTH) {
         key = `outer_${(config.outerPathStart + m.toPathIndex) % OUTER_RING_LENGTH}`;
       } else {
-        const coord = PLAYER_INNER_COORDS[playerIdx]?.[m.toPathIndex];
+        const coord = PLAYER_INNER_PATH[playerIdx]?.[m.toPathIndex];
         if (!coord) { key = 'inner_unknown'; }
         else {
           const outerIdx = OUTER_PATH_COORDS.findIndex(c => c.row === coord.row && c.col === coord.col);

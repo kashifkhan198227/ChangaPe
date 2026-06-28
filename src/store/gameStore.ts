@@ -5,6 +5,7 @@ import {
   performRoll,
   applyMove,
   undoLastMove,
+  skipTurn,
   LegalMove,
   computeLegalMoves,
   GameRules,
@@ -24,9 +25,11 @@ interface GameStore {
   legalMoves: LegalMove[];
   isAnimating: boolean;
   hasSavedGame: boolean;
-  activeRollIndex: number; // which pending roll the user has selected to play
+  activeRollIndex: number;
+  _aiTimeouts: ReturnType<typeof setTimeout>[]; // BUG-6: track for cancellation
 
   // Actions
+  cancelAI: () => void; // BUG-6: cancel all pending AI timeouts
   startGame: (numPlayers: 2 | 3 | 4, players: SetupPlayer[], rules?: GameRules) => void;
   rollDice: () => void;
   selectPawn: (pawnId: number) => void;
@@ -51,6 +54,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isAnimating: false,
   hasSavedGame: false,
   activeRollIndex: 0,
+  _aiTimeouts: [],
+
+  cancelAI: () => {
+    get()._aiTimeouts.forEach(id => clearTimeout(id));
+    set({ _aiTimeouts: [], isAnimating: false });
+  },
 
   startGame: (numPlayers, players, rules = DEFAULT_RULES) => {
     const aiMap: Record<number, 'easy' | 'medium' | 'hard' | 'human'> = {};
@@ -144,13 +153,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   forfeitTurn: () => {
     const { gameState } = get();
     if (!gameState) return;
-    // Import advanceTurn logic via performRoll bypass — just push an empty turn
-    const newState = { ...gameState, pendingRolls: [], phase: 'rolling' as const };
-    // Manually advance to next player
-    const order = [0, 3, 2, 1].filter(i => i < newState.players.length);
-    const currentPos = order.indexOf(newState.currentPlayerIndex);
-    const next = order[(currentPos + 1) % order.length];
-    set({ gameState: { ...newState, currentPlayerIndex: next, diceValue: null, diceRolled: false }, legalMoves: [], selectedPawnId: null });
+    const newState = skipTurn(gameState); // BUG-2: use engine's skipTurn
+    set({ gameState: newState, legalMoves: [], selectedPawnId: null });
   },
 
   triggerAIMove: () => {
@@ -161,21 +165,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer.isAI) return;
 
-    // Use isAnimating flag to prevent stacking timeouts
     set({ isAnimating: true });
 
+    const scheduleAI = (fn: () => void, delay: number) => {
+      const id = setTimeout(fn, delay);
+      set(s => ({ _aiTimeouts: [...s._aiTimeouts, id] }));
+    };
+
     if (gameState.phase === 'rolling') {
-      setTimeout(() => {
+      scheduleAI(() => {
         const state = get().gameState;
         if (!state || state.phase === 'gameover') { set({ isAnimating: false }); return; }
         const rolled = performRoll(state);
         const legal = rolled.phase === 'moving' ? computeLegalMoves(rolled) : [];
-        set({ gameState: rolled, legalMoves: legal, isAnimating: false });
+        set(s => ({ gameState: rolled, legalMoves: legal, isAnimating: false, _aiTimeouts: s._aiTimeouts.slice(1) }));
 
-        // Schedule next AI action
         const nextPlayer = rolled.players[rolled.currentPlayerIndex];
         if (nextPlayer.isAI && rolled.phase !== 'gameover') {
-          setTimeout(() => get().triggerAIMove(), 900);
+          scheduleAI(() => get().triggerAIMove(), 900);
         }
       }, 900);
 
@@ -183,16 +190,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const move = getAIMove(gameState, currentPlayer.aiLevel);
       if (!move) { set({ isAnimating: false }); return; }
 
-      setTimeout(() => {
+      scheduleAI(() => {
         const state = get().gameState;
         if (!state || state.phase === 'gameover') { set({ isAnimating: false }); return; }
         const newState = applyMove(state, move);
         const legal = newState.phase === 'moving' ? computeLegalMoves(newState) : [];
-        set({ gameState: newState, legalMoves: legal, selectedPawnId: null, isAnimating: false });
+        set(s => ({ gameState: newState, legalMoves: legal, selectedPawnId: null, isAnimating: false, _aiTimeouts: s._aiTimeouts.slice(1) }));
 
         const nextPlayer = newState.players[newState.currentPlayerIndex];
         if (nextPlayer.isAI && newState.phase !== 'gameover') {
-          setTimeout(() => get().triggerAIMove(), 900);
+          scheduleAI(() => get().triggerAIMove(), 900);
         }
       }, 900);
     } else {

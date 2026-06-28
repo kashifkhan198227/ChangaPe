@@ -37,11 +37,15 @@ export default function BoardScreen({ onPause, onVictory }: BoardScreenProps) {
     undoMove,
     triggerAIMove,
     saveCurrentGame,
+    cancelAI,
   } = useGameStore();
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // BUG-6: cancel AI timeouts when component unmounts
+  useEffect(() => { return () => { cancelAI(); }; }, []);
 
   const clearTimer = () => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
@@ -231,15 +235,7 @@ export default function BoardScreen({ onPause, onVictory }: BoardScreenProps) {
   );
 }
 
-import { PLAYER_CONFIGS, OUTER_RING_LENGTH, OUTER_PATH_COORDS } from '../engine/BoardLayout';
-
-// Inner spiral coords per player — must stay in sync with Board.tsx PLAYER_INNER_COORDS
-const INNER_COORDS: Record<number, Record<number, { row: number; col: number }>> = {
-  0: { 16:{row:3,col:1},17:{row:2,col:1},18:{row:1,col:1},19:{row:1,col:2},20:{row:1,col:3},21:{row:2,col:3},22:{row:3,col:3},23:{row:3,col:2},24:{row:2,col:2} },
-  1: { 16:{row:1,col:1},17:{row:1,col:2},18:{row:1,col:3},19:{row:2,col:3},20:{row:3,col:3},21:{row:3,col:2},22:{row:3,col:1},23:{row:2,col:1},24:{row:2,col:2} },
-  2: { 16:{row:1,col:3},17:{row:2,col:3},18:{row:3,col:3},19:{row:3,col:2},20:{row:3,col:1},21:{row:2,col:1},22:{row:1,col:1},23:{row:1,col:2},24:{row:2,col:2} },
-  3: { 16:{row:3,col:3},17:{row:3,col:2},18:{row:3,col:1},19:{row:2,col:1},20:{row:1,col:1},21:{row:1,col:2},22:{row:1,col:3},23:{row:2,col:3},24:{row:2,col:2} },
-};
+import { PLAYER_CONFIGS, OUTER_RING_LENGTH, OUTER_PATH_COORDS, PLAYER_INNER_PATH } from '../engine/BoardLayout';
 
 function moveTargetsCell(
   move: LegalMove,
@@ -254,7 +250,7 @@ function moveTargetsCell(
     return coord.row === row && coord.col === col;
   }
   // Inner path
-  const coord = INNER_COORDS[playerIndex]?.[move.toPathIndex];
+  const coord = PLAYER_INNER_PATH[playerIndex]?.[move.toPathIndex];
   return coord ? coord.row === row && coord.col === col : false;
 }
 

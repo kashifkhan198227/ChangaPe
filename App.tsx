@@ -6,6 +6,8 @@ import { useGameStore, SetupPlayer } from './src/store/gameStore';
 import { useSettingsStore } from './src/store/settingsStore';
 import { GameRules } from './src/engine/GameEngine';
 import { COLORS } from './src/utils/theme';
+import { appendGameHistory } from './src/utils/storage';
+import { PLAYER_NAMES } from './src/engine/BoardLayout';
 
 import HomeScreen from './src/screens/HomeScreen';
 import GameSetupScreen from './src/screens/GameSetupScreen';
@@ -16,6 +18,7 @@ import RulesScreen from './src/screens/RulesScreen';
 import StatisticsScreen from './src/screens/StatisticsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AboutScreen from './src/screens/AboutScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
 
 type Screen =
   | 'home'
@@ -23,6 +26,7 @@ type Screen =
   | 'board'
   | 'rules'
   | 'statistics'
+  | 'leaderboard'
   | 'settings'
   | 'about'
   | 'victory';
@@ -58,11 +62,23 @@ export default function App() {
 
   const handleVictory = (winnerIndex: number) => {
     setVictoryWinner(winnerIndex);
-    const hasAI = gameState?.players.some(p => p.isAI) ?? false;
-    const humanPlayer = gameState?.players.find(p => !p.isAI);
-    const humanWon = humanPlayer?.index === winnerIndex;
-    const captures = humanPlayer?.captureCount ?? 0;
-    recordGameResult(humanWon, captures, hasAI);
+    if (gameState) {
+      const hasAI = gameState.players.some(p => p.isAI);
+      const humanPlayer = gameState.players.find(p => !p.isAI);
+      const humanWon = humanPlayer?.index === winnerIndex;
+      const captures = humanPlayer?.captureCount ?? 0;
+      recordGameResult(humanWon, captures, hasAI);
+
+      appendGameHistory({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        numPlayers: gameState.players.length,
+        winnerName: PLAYER_NAMES[winnerIndex],
+        winnerIsAI: gameState.players[winnerIndex]?.isAI ?? false,
+        playerCaptures: gameState.players.map(p => p.captureCount),
+        duration: 0,
+      });
+    }
     setScreen('victory');
   };
 
@@ -90,6 +106,7 @@ export default function App() {
             onResumeGame={handleResumeGame}
             onRules={() => setScreen('rules')}
             onStatistics={() => setScreen('statistics')}
+            onLeaderboard={() => setScreen('leaderboard')}
             onSettings={() => setScreen('settings')}
             onAbout={() => setScreen('about')}
           />
@@ -134,6 +151,9 @@ export default function App() {
 
       case 'statistics':
         return <StatisticsScreen onBack={() => setScreen('home')} />;
+
+      case 'leaderboard':
+        return <LeaderboardScreen onBack={() => setScreen('home')} />;
 
       case 'settings':
         return <SettingsScreen onBack={() => setScreen(pauseVisible ? 'board' : 'home')} />;

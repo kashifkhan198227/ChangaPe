@@ -4,6 +4,7 @@ const KEYS = {
   SETTINGS: '@changape_settings',
   STATS: '@changape_stats',
   SAVED_GAME: '@changape_saved_game',
+  GAME_HISTORY: '@changape_history',
 };
 
 export interface AppSettings {
@@ -101,4 +102,36 @@ export async function loadSavedGame(): Promise<unknown | null> {
 
 export async function clearSavedGame(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.SAVED_GAME);
+}
+
+export interface GameHistoryEntry {
+  id: string;
+  date: string;
+  numPlayers: number;
+  winnerName: string;
+  winnerIsAI: boolean;
+  playerCaptures: number[]; // per-player capture counts
+  duration: number; // seconds (0 if unknown)
+}
+
+const MAX_HISTORY = 50;
+
+export async function loadGameHistory(): Promise<GameHistoryEntry[]> {
+  try {
+    const data = await AsyncStorage.getItem(KEYS.GAME_HISTORY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function appendGameHistory(entry: GameHistoryEntry): Promise<void> {
+  const history = await loadGameHistory();
+  history.unshift(entry); // newest first
+  if (history.length > MAX_HISTORY) history.splice(MAX_HISTORY);
+  await AsyncStorage.setItem(KEYS.GAME_HISTORY, JSON.stringify(history));
+}
+
+export async function clearGameHistory(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.GAME_HISTORY);
 }

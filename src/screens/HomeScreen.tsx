@@ -8,6 +8,7 @@ interface HomeScreenProps {
   onResumeGame: () => void;
   onRules: () => void;
   onStatistics: () => void;
+  onLeaderboard: () => void;
   onSettings: () => void;
   onAbout: () => void;
 }
@@ -18,6 +19,7 @@ export default function HomeScreen({
   onResumeGame,
   onRules,
   onStatistics,
+  onLeaderboard,
   onSettings,
   onAbout,
 }: HomeScreenProps) {
@@ -61,6 +63,7 @@ export default function HomeScreen({
         )}
         <MenuButton label="📖  RULES" onPress={onRules} />
         <MenuButton label="📊  STATISTICS" onPress={onStatistics} />
+        <MenuButton label="🏆  LEADERBOARD" onPress={onLeaderboard} />
         <MenuButton label="⚙  SETTINGS" onPress={onSettings} />
         <MenuButton label="ℹ  ABOUT" onPress={onAbout} />
       </View>

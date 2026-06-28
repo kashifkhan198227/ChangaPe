@@ -101,6 +101,47 @@ export const PLAYER_NAMES = ['Red', 'Blue', 'Green', 'Yellow'];
 export const DICE_VALUES = [1, 2, 3, 4, 8] as const;
 export type DiceValue = typeof DICE_VALUES[number];
 
+// Inner spiral path coordinates per player (pathIndex 16–24, 24 = center/finish)
+// This is the single source of truth — imported by GameEngine, Board, and BoardScreen.
+export const PLAYER_INNER_PATH: Record<number, Record<number, { row: number; col: number }>> = {
+  0: { // RED enters from bottom
+    16:{row:3,col:1}, 17:{row:2,col:1}, 18:{row:1,col:1},
+    19:{row:1,col:2}, 20:{row:1,col:3}, 21:{row:2,col:3},
+    22:{row:3,col:3}, 23:{row:3,col:2}, 24:{row:2,col:2},
+  },
+  1: { // BLUE enters from left
+    16:{row:1,col:1}, 17:{row:1,col:2}, 18:{row:1,col:3},
+    19:{row:2,col:3}, 20:{row:3,col:3}, 21:{row:3,col:2},
+    22:{row:3,col:1}, 23:{row:2,col:1}, 24:{row:2,col:2},
+  },
+  2: { // GREEN enters from top
+    16:{row:1,col:3}, 17:{row:2,col:3}, 18:{row:3,col:3},
+    19:{row:3,col:2}, 20:{row:3,col:1}, 21:{row:2,col:1},
+    22:{row:1,col:1}, 23:{row:1,col:2}, 24:{row:2,col:2},
+  },
+  3: { // YELLOW enters from right
+    16:{row:3,col:3}, 17:{row:3,col:2}, 18:{row:3,col:1},
+    19:{row:2,col:1}, 20:{row:1,col:1}, 21:{row:1,col:2},
+    22:{row:1,col:3}, 23:{row:2,col:3}, 24:{row:2,col:2},
+  },
+};
+
+// Derived "row_col" key lookup for physical overlap detection in the engine
+export const PLAYER_INNER_CELL_KEY: Record<number, Record<number, string>> = (() => {
+  const result: Record<number, Record<number, string>> = {};
+  for (const [playerStr, pathMap] of Object.entries(PLAYER_INNER_PATH)) {
+    const p = Number(playerStr);
+    result[p] = {};
+    for (const [idxStr, coord] of Object.entries(pathMap)) {
+      result[p][Number(idxStr)] = `${coord.row}_${coord.col}`;
+    }
+  }
+  return result;
+})();
+
+// Inner cells with cowry circle decoration (safe squares in the inner path)
+export const COWRY_INNER_CELL_KEYS = new Set(['2_1', '1_2', '2_3', '3_2']);
+
 export function rollCowry(): DiceValue {
   const rand = Math.random();
   // Approximate cowry probabilities: 1≈25%, 2≈37.5%, 3≈25%, 4≈6.25%, 8≈6.25%

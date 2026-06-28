@@ -1,4 +1,4 @@
-import { DiceValue, PLAYER_CONFIGS, rollCowry, isSafeSquare, OUTER_RING_LENGTH, SAFE_INNER_INDICES } from './BoardLayout';
+import { DiceValue, PLAYER_CONFIGS, rollCowry, isSafeSquare, OUTER_RING_LENGTH, PLAYER_INNER_CELL_KEY, COWRY_INNER_CELL_KEYS } from './BoardLayout';
 
 export type PlayerIndex = 0 | 1 | 2 | 3;
 export type PawnState = 'home' | 'active' | 'finished';
@@ -60,6 +60,7 @@ export interface MoveRecord {
   captured: boolean;
   capturedPlayer?: number;
   capturedPawnId?: number;
+  capturedPawnPathIndex?: number; // BUG-1 fix: store where the captured pawn was
   diceValue: DiceValue;
 }
 
@@ -189,16 +190,9 @@ interface CaptureInfo {
   isSafe: boolean;
 }
 
-// Inner path grid cell keys per player — row_col (must match Board.tsx PLAYER_INNER_COORDS)
-const INNER_CELL_KEY: Record<number, Record<number, string>> = {
-  0: { 16:'3_1',17:'2_1',18:'1_1',19:'1_2',20:'1_3',21:'2_3',22:'3_3',23:'3_2',24:'2_2' },
-  1: { 16:'1_1',17:'1_2',18:'1_3',19:'2_3',20:'3_3',21:'3_2',22:'3_1',23:'2_1',24:'2_2' },
-  2: { 16:'1_3',17:'2_3',18:'3_3',19:'3_2',20:'3_1',21:'2_1',22:'1_1',23:'1_2',24:'2_2' },
-  3: { 16:'3_3',17:'3_2',18:'3_1',19:'2_1',20:'1_1',21:'1_2',22:'1_3',23:'2_3',24:'2_2' },
-};
-
-// Cowry circle cell keys (safe inner cells)
-const COWRY_CELL_KEYS = new Set(['2_1','1_2','2_3','3_2']);
+// Re-alias for local readability
+const INNER_CELL_KEY = PLAYER_INNER_CELL_KEY;
+const COWRY_CELL_KEYS = COWRY_INNER_CELL_KEYS;
 
 function findCapture(
   state: GameState,
@@ -289,6 +283,7 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
   if (move.wouldCapture && move.capturedPlayer !== undefined && move.capturedPawnId !== undefined) {
     const capturedPlayerObj = newState.players[move.capturedPlayer];
     const capturedPawn = capturedPlayerObj.pawns.find(p => p.id === move.capturedPawnId)!;
+    record.capturedPawnPathIndex = capturedPawn.pathIndex; // BUG-1 fix
     capturedPawn.state = 'home';
     capturedPawn.pathIndex = -1;
     player.captureCount++;
@@ -373,6 +368,12 @@ function advanceTurn(state: GameState): void {
   state.currentPlayerIndex = next;
 }
 
+export function skipTurn(state: GameState): GameState {
+  const newState = deepClone(state);
+  advanceTurn(newState);
+  return newState;
+}
+
 export function performRoll(state: GameState): GameState {
   const newState = deepClone(state);
   const dice = rollCowry();
@@ -434,7 +435,7 @@ export function undoLastMove(state: GameState): GameState | null {
     const capturedPlayer = newState.players[last.capturedPlayer];
     const capturedPawn = capturedPlayer.pawns.find(p => p.id === last.capturedPawnId)!;
     capturedPawn.state = 'active';
-    capturedPawn.pathIndex = pawn.pathIndex; // restore position
+    capturedPawn.pathIndex = last.capturedPawnPathIndex ?? last.toPathIndex; // BUG-1 fix
     player.captureCount = Math.max(0, player.captureCount - 1);
   }
 

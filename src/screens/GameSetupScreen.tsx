@@ -11,6 +11,7 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/theme';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../engine/BoardLayout';
 import { GameRules, DEFAULT_RULES } from '../engine/GameEngine';
 import { SetupPlayer } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 type PlayerType = 'human' | 'easy' | 'medium' | 'hard' | 'none';
 
@@ -30,9 +31,11 @@ const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
 const PLAYER_TYPES: PlayerType[] = ['human', 'easy', 'medium', 'hard', 'none'];
 
 export default function GameSetupScreen({ onStart, onBack }: GameSetupScreenProps) {
+  const { settings } = useSettingsStore();
   const [numPlayers, setNumPlayers] = useState<2 | 3 | 4>(2);
   const [playerTypes, setPlayerTypes] = useState<PlayerType[]>(['human', 'easy', 'none', 'none']);
-  const [rules, setRules] = useState<GameRules>(DEFAULT_RULES);
+  // BUG-5: initialize rules from settings so user's saved preferences apply
+  const [rules, setRules] = useState<GameRules>({ ...DEFAULT_RULES, ...settings.rules });
 
   const cyclePlayerType = (index: number) => {
     const current = playerTypes[index];
