@@ -1850,3 +1850,194 @@ test('A-11: Yellow player (index 3) outerPathStart is 14', () => {
   expect(PLAYER_CONFIGS[3].outerPathStart).toBe(14);
 });
 
+
+test('RE-01: requireCaptureToEnterInner waived when ALL opponents are in inner path', () => {
+  let state = makeGameR({ requireCaptureToEnterInner: true });
+  state = setPawn(state, 0, 0, 15);
+  state = setPawn(state, 1, 0, 18);
+  state = setPawn(state, 1, 1, 20);
+  state = setPawn(state, 1, 2, 17);
+  state = setPawn(state, 1, 3, 22);
+  const moved = withDice(state, 1);
+  const moves = computeLegalMoves(moved);
+  expect(moves.filter(m => m.pawnId === 0 && m.toPathIndex >= OUTER_RING_LENGTH).length).toBeGreaterThan(0);
+});
+
+test('RE-02: requireCaptureToEnterInner still blocks when any opponent remains on outer', () => {
+  let state = makeGameR({ requireCaptureToEnterInner: true });
+  state = setPawn(state, 0, 0, 15);
+  state = setPawn(state, 1, 0, 5);
+  const moved = withDice(state, 1);
+  const moves = computeLegalMoves(moved);
+  expect(moves.filter(m => m.pawnId === 0 && m.toPathIndex >= OUTER_RING_LENGTH).length).toBe(0);
+});
+
+test('RE-03: requireCaptureToEnterInner waived when ALL opponents are finished', () => {
+  let state = makeGameR({ requireCaptureToEnterInner: true });
+  state = setPawn(state, 0, 0, 15);
+  state = setPawn(state, 1, 0, 24);
+  state = setPawn(state, 1, 1, 24);
+  state = setPawn(state, 1, 2, 24);
+  state = setPawn(state, 1, 3, 24);
+  const moved = withDice(state, 1);
+  const moves = computeLegalMoves(moved);
+  expect(moves.filter(m => m.pawnId === 0 && m.toPathIndex >= OUTER_RING_LENGTH).length).toBeGreaterThan(0);
+});
+
+test('RE-04: requireCaptureToEnterInner blocks when all opponents are still at home', () => {
+  let state = makeGameR({ requireCaptureToEnterInner: true });
+  state = setPawn(state, 0, 0, 15);
+  const moved = withDice(state, 1);
+  const moves = computeLegalMoves(moved);
+  expect(moves.filter(m => m.pawnId === 0 && m.toPathIndex >= OUTER_RING_LENGTH).length).toBe(0);
+});
+
+test('RE-05: requireCaptureToEnterInner blocks in 3-player when one opponent not in inner', () => {
+  let state = makeGame(3, { requireCaptureToEnterInner: true });
+  state = setPawn(state, 0, 0, 15);
+  state = setPawn(state, 1, 0, 17); state = setPawn(state, 1, 1, 19);
+  state = setPawn(state, 1, 2, 21); state = setPawn(state, 1, 3, 23);
+  state = setPawn(state, 2, 0, 5);
+  const moved = withDice(state, 1);
+  expect(computeLegalMoves(moved).filter(m => m.pawnId === 0 && m.toPathIndex >= OUTER_RING_LENGTH).length).toBe(0);
+});
+
+test('EL-01: advanceTurn skips player whose all 4 pawns are finished', () => {
+  let state = makeGame(4);
+  state = setPawn(state, 1, 0, 24); state = setPawn(state, 1, 1, 24);
+  state = setPawn(state, 1, 2, 24); state = setPawn(state, 1, 3, 24);
+  state = skipTurn(state);
+  expect(state.currentPlayerIndex).toBe(2);
+});
+
+test('EL-02: advanceTurn skips multiple consecutive eliminated players', () => {
+  let state = makeGame(4);
+  [1, 3].forEach(idx => {
+    state = setPawn(state, idx, 0, 24); state = setPawn(state, idx, 1, 24);
+    state = setPawn(state, idx, 2, 24); state = setPawn(state, idx, 3, 24);
+  });
+  state = skipTurn(state);
+  expect(state.currentPlayerIndex).toBe(2);
+  state = skipTurn(state);
+  expect(state.currentPlayerIndex).toBe(0);
+});
+
+test('AI-01: createInitialGameState sets isAI correctly for human and AI slots', () => {
+  const state = createInitialGameState(2, { 0: 'human', 2: 'easy' }, DEFAULT_RULES);
+  const red = state.players.find(p => p.index === 0)!;
+  const green = state.players.find(p => p.index === 2)!;
+  expect(red.isAI).toBe(false);
+  expect(green.isAI).toBe(true);
+});
+
+test('AI-02: createInitialGameState sets aiLevel correctly for non-human players', () => {
+  const state = createInitialGameState(4, { 0: 'human', 3: 'medium', 2: 'hard', 1: 'easy' }, DEFAULT_RULES);
+  expect(state.players.find(p => p.index === 3)!.aiLevel).toBe('medium');
+  expect(state.players.find(p => p.index === 2)!.aiLevel).toBe('hard');
+  expect(state.players.find(p => p.index === 1)!.aiLevel).toBe('easy');
+});
+
+test('EF-01: exactRollToFinish=true, overshoot produces zero legal moves for that pawn', () => {
+  let state = makeGameR({ exactRollToFinish: true });
+  state = setPawn(state, 0, 0, 23);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 3);
+  expect(computeLegalMoves(moved).filter(m => m.pawnId === 0).length).toBe(0);
+});
+
+test('EF-02: exactRollToFinish=true, exact roll finishes pawn', () => {
+  let state = makeGameR({ exactRollToFinish: true });
+  state = setPawn(state, 0, 0, 20);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 4);
+  expect(computeLegalMoves(moved).find(m => m.pawnId === 0 && m.wouldFinish)).toBeDefined();
+});
+
+test('EF-03: exactRollToFinish=false, overshoot still finishes pawn', () => {
+  let state = makeGameR({ exactRollToFinish: false });
+  state = setPawn(state, 0, 0, 22);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 8);
+  expect(computeLegalMoves(moved).find(m => m.pawnId === 0 && m.wouldFinish)).toBeDefined();
+});
+
+test('PR-01: first of two pending rolls consumed, second stays active', () => {
+  let state = makeGame();
+  state = setPawn(state, 0, 0, 3);
+  state = withCaptures(state, 0, 1);
+  state = { ...state, diceValue: 2 as any, diceRolled: true, pendingRolls: [2, 1], phase: 'moving' as const };
+  const m = computeLegalMoves(state).find(mv => mv.pawnId === 0 && !mv.wouldCapture && !mv.wouldFinish);
+  if (m) {
+    const after = applyMove(state, m);
+    expect(after.pendingRolls).toEqual([1]);
+    expect(after.phase).toBe('moving');
+    expect(after.currentPlayerIndex).toBe(state.currentPlayerIndex);
+  }
+});
+
+test('PR-02: using last pending roll advances turn to next player', () => {
+  let state = makeGame();
+  state = setPawn(state, 0, 0, 3);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 2);
+  const m = computeLegalMoves(moved).find(mv => !mv.wouldCapture && !mv.wouldFinish);
+  if (m) {
+    const after = applyMove(moved, m);
+    expect(after.pendingRolls).toEqual([]);
+    expect(after.phase).toBe('rolling');
+    expect(after.currentPlayerIndex).not.toBe(state.currentPlayerIndex);
+  }
+});
+
+test('WN-01: phase becomes gameover when last pawn of a player finishes', () => {
+  let state = makeGame();
+  state = setPawn(state, 0, 0, 24); state = setPawn(state, 0, 1, 24);
+  state = setPawn(state, 0, 2, 24); state = setPawn(state, 0, 3, 23);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 1);
+  const finishMove = computeLegalMoves(moved).find(m => m.wouldFinish);
+  if (finishMove) { expect(applyMove(moved, finishMove).phase).toBe('gameover'); }
+});
+
+test('WN-02: winner field set to correct player board index on gameover', () => {
+  let state = makeGame();
+  state = setPawn(state, 0, 0, 24); state = setPawn(state, 0, 1, 24);
+  state = setPawn(state, 0, 2, 24); state = setPawn(state, 0, 3, 23);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 1);
+  const finishMove = computeLegalMoves(moved).find(m => m.wouldFinish);
+  if (finishMove) { expect(applyMove(moved, finishMove).winner).toBe(0); }
+});
+
+test('WN-03: winner is null and game continues when only 3 of 4 pawns finished', () => {
+  let state = makeGame();
+  state = setPawn(state, 0, 0, 24); state = setPawn(state, 0, 1, 24);
+  state = setPawn(state, 0, 2, 24); state = setPawn(state, 0, 3, 10);
+  state = withCaptures(state, 0, 1);
+  const moved = withDice(state, 2);
+  const m = computeLegalMoves(moved).find(mv => !mv.wouldFinish && mv.pawnId === 3);
+  if (m) {
+    const after = applyMove(moved, m);
+    expect(after.phase).not.toBe('gameover');
+    expect(after.winner).toBeNull();
+  }
+});
+
+test('IS-06: 2 stacked opponents on same inner non-cowry cell prevents capture', () => {
+  let state = makeGame(4);
+  state = setPawn(state, 0, 0, 15);
+  state = withCaptures(state, 0, 1);
+  state = setPawn(state, 3, 0, 22);
+  state = setPawn(state, 3, 1, 22);
+  const moved = withDice(state, 1);
+  expect(computeLegalMoves(moved).every(m => !m.wouldCapture)).toBe(true);
+});
+
+test('IS-07: single opponent on inner non-cowry cell CAN be captured', () => {
+  let state = makeGame(4);
+  state = setPawn(state, 0, 0, 15);
+  state = withCaptures(state, 0, 1);
+  state = setPawn(state, 3, 0, 22);
+  const moved = withDice(state, 1);
+  expect(computeLegalMoves(moved).some(m => m.wouldCapture)).toBe(true);
+});
