@@ -61,7 +61,7 @@ export default function VictoryScreen({
               <Text style={styles.statName}>{PLAYER_NAMES[player.index]}</Text>
               <Text style={styles.statCaptures}>⚔ {player.captureCount}</Text>
               <Text style={styles.statFinished}>
-                ✓ {player.pawns.filter(p => p.state === 'finished').length}/4
+                ✓ {player.pawns.filter(p => p.state === 'finished' || p.state === 'center').length}/4
               </Text>
             </View>
           ))}
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gold,
   },
   primaryBtnText: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 2,

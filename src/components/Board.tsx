@@ -74,10 +74,17 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
     players.forEach(player => {
       const config = PLAYER_CONFIGS[player.index];
       player.pawns.forEach(pawn => {
-        // Finished pawns are shown in the treasury strip — not on the board center
+        // Finished pawns (treasury strip) are not drawn on board; 'center' pawns go to center cell
         if (pawn.state === 'finished') return;
-        if (pawn.state !== 'active') return;
+        if (pawn.state === 'home') return;
         let key: string;
+        // Center-state pawns always occupy the board center cell
+        if (pawn.state === 'center') {
+          const arr = map.get('rc_2_2') || [];
+          arr.push(pawn);
+          map.set('rc_2_2', arr);
+          return;
+        }
         if (pawn.pathIndex < OUTER_RING_LENGTH) {
           key = `outer_${(config.outerPathStart + pawn.pathIndex) % OUTER_RING_LENGTH}`;
         } else {
@@ -100,7 +107,7 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
 
   const legalTargetKeys = useMemo(() => {
     const keys = new Set<string>();
-    const playerIdx = players[currentPlayerIndex].index;
+    const playerIdx = players.find(p => p.index === currentPlayerIndex)?.index ?? currentPlayerIndex;
     const config = PLAYER_CONFIGS[playerIdx];
     legalMoves.forEach(m => {
       let key: string;
@@ -276,8 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gold + '22',
   },
   safeCell: {
-    borderColor: COLORS.safeSquareBorder + '66',
-    borderWidth: 1,
+    borderColor: COLORS.safeSquareBorder + '88',
   },
   highlighted: {
     backgroundColor: COLORS.legalMove + '55',

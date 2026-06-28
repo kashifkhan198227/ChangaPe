@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pillTextActive: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
   },
   playerRow: {
     flexDirection: 'row',
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.lg,
   },
   startText: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 3,

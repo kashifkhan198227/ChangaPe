@@ -45,17 +45,23 @@ export default function HomeScreen({
       <View style={styles.boardPreview}>
         {[0, 1, 2, 3, 4].map(row => (
           <View key={row} style={styles.boardRow}>
-            {[0, 1, 2, 3, 4].map(col => (
-              <View
-                key={col}
-                style={[
-                  styles.boardCell,
-                  (row === 0 || row === 4 || col === 0 || col === 4) && styles.outerCell,
-                  row === 2 && col === 2 && styles.centerCell,
-                  (row === 0 && (col === 0 || col === 4)) && styles.cornerCell,
-                  (row === 4 && (col === 0 || col === 4)) && styles.cornerCell,
-                ]}
-              />
+            {[0, 1, 2, 3, 4].map(col => {
+              const isOuter = row === 0 || row === 4 || col === 0 || col === 4;
+              const isCenter = row === 2 && col === 2;
+              const isCorner = (row === 0 || row === 4) && (col === 0 || col === 4);
+              return (
+                <View
+                  key={col}
+                  style={[
+                    styles.boardCell,
+                    isOuter && styles.outerCell,
+                    !isOuter && !isCenter && styles.innerCell,
+                    isCenter && styles.centerCell,
+                    isCorner && styles.cornerCell,
+                  ]}
+                />
+              );
+            })}
             ))}
           </View>
         ))}
@@ -155,13 +161,18 @@ const styles = StyleSheet.create({
   boardCell: {
     width: 12,
     height: 12,
-    backgroundColor: COLORS.innerPath,
+    backgroundColor: COLORS.outerSquare,
     borderRadius: 1,
   },
   outerCell: {
     backgroundColor: COLORS.outerSquare,
     borderWidth: 0.5,
     borderColor: COLORS.boardLines,
+  },
+  innerCell: {
+    backgroundColor: COLORS.innerPath,
+    borderWidth: 0.5,
+    borderColor: COLORS.boardLines + '99',
   },
   centerCell: {
     backgroundColor: COLORS.centerSquare,

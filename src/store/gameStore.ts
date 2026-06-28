@@ -162,7 +162,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!gameState || isAnimating) return;
     if (gameState.phase === 'gameover') return;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const currentPlayer = gameState.players.find(p => p.index === gameState.currentPlayerIndex)!;
     if (!currentPlayer.isAI) return;
 
     set({ isAnimating: true });
@@ -180,7 +180,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const legal = rolled.phase === 'moving' ? computeLegalMoves(rolled) : [];
         set(s => ({ gameState: rolled, legalMoves: legal, isAnimating: false, _aiTimeouts: s._aiTimeouts.slice(1) }));
 
-        const nextPlayer = rolled.players[rolled.currentPlayerIndex];
+        const nextPlayer = rolled.players.find(p => p.index === rolled.currentPlayerIndex)!;
         if (nextPlayer.isAI && rolled.phase !== 'gameover') {
           scheduleAI(() => get().triggerAIMove(), 900);
         }
@@ -197,7 +197,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const legal = newState.phase === 'moving' ? computeLegalMoves(newState) : [];
         set(s => ({ gameState: newState, legalMoves: legal, selectedPawnId: null, isAnimating: false, _aiTimeouts: s._aiTimeouts.slice(1) }));
 
-        const nextPlayer = newState.players[newState.currentPlayerIndex];
+        const nextPlayer = newState.players.find(p => p.index === newState.currentPlayerIndex)!;
         if (nextPlayer.isAI && newState.phase !== 'gameover') {
           scheduleAI(() => get().triggerAIMove(), 900);
         }

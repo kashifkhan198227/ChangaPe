@@ -1226,7 +1226,7 @@ test('I-21: Pawn finishing increments finished pawn count to 1', () => {
   const finishMove = moves.find(m => m.wouldFinish);
   if (finishMove) {
     const after = applyMove(moved, finishMove);
-    expect(after.players[0].pawns.filter(p => p.state === 'finished').length).toBe(1);
+    expect(after.players[0].pawns.filter(p => p.state === 'center').length).toBe(1);
   }
 });
 
@@ -1264,7 +1264,7 @@ test('I-25: Moving pawn from inner to finish sets state to finished', () => {
   if (finishMove) {
     const after = applyMove(moved, finishMove);
     const pawn = after.players[0].pawns.find(p => p.id === finishMove.pawnId)!;
-    expect(pawn.state).toBe('finished');
+    expect(pawn.state).toBe('center');
   }
 });
 

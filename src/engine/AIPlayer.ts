@@ -45,7 +45,7 @@ function hardAI(moves: LegalMove[], state: GameState): LegalMove {
 
 function scoreMove(move: LegalMove, state: GameState): number {
   let score = 0;
-  const player = state.players[state.currentPlayerIndex];
+  const player = state.players.find(p => p.index === state.currentPlayerIndex)!;
 
   // Finishing a pawn is highest priority
   if (move.wouldFinish) score += 200;

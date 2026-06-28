@@ -1,7 +1,8 @@
 import { DiceValue, PLAYER_CONFIGS, rollCowry, isSafeSquare, OUTER_RING_LENGTH, PLAYER_INNER_CELL_KEY, COWRY_INNER_CELL_KEYS } from './BoardLayout';
 
 export type PlayerIndex = 0 | 1 | 2 | 3;
-export type PawnState = 'home' | 'active' | 'finished';
+// 'center' = pawn reached center cell, displayed there; 'finished' = moved to treasury strip
+export type PawnState = 'home' | 'active' | 'center' | 'finished';
 
 export interface Pawn {
   id: number;           // 0–3
@@ -102,17 +103,22 @@ function getPositionKey(player: PlayerIndex, pathIndex: number): string {
   return `inner_${player}_${pathIndex}`;
 }
 
+/** Look up the active player by board index — safe for any turn-order setup. */
+export function getCurrentPlayer(state: GameState): Player {
+  return state.players.find(p => p.index === state.currentPlayerIndex)!;
+}
+
 export function computeLegalMoves(state: GameState): LegalMove[] {
   if (!state.diceRolled || state.diceValue === null) return [];
   if (state.phase !== 'moving') return [];
 
-  const player = state.players[state.currentPlayerIndex];
+  const player = getCurrentPlayer(state);
   // Use first pending roll value for current move
   const dice = state.pendingRolls.length > 0 ? state.pendingRolls[0] : (state.diceValue as number);
   const moves: LegalMove[] = [];
 
   for (const pawn of player.pawns) {
-    if (pawn.state === 'finished') continue;
+    if (pawn.state === 'finished' || pawn.state === 'center') continue;
 
     if (pawn.state === 'home') {
       // Pe (1) enters a pawn and moves it 1 step past the cross (pathIndex 1)
@@ -144,7 +150,7 @@ export function computeLegalMoves(state: GameState): LegalMove[] {
       const allOpponentsInInnerOrDone = state.players.every(p =>
         p.index === player.index ||
         p.pawns.every(pw =>
-          pw.state === 'finished' ||
+          pw.state === 'finished' || pw.state === 'center' ||
           (pw.state === 'active' && pw.pathIndex >= OUTER_RING_LENGTH)
         )
       );
@@ -263,7 +269,7 @@ function findCapture(
 
 export function applyMove(state: GameState, move: LegalMove): GameState {
   const newState = deepClone(state);
-  const player = newState.players[newState.currentPlayerIndex];
+  const player = newState.players.find(p => p.index === newState.currentPlayerIndex)!;
   const pawn = player.pawns.find(p => p.id === move.pawnId)!;
 
   const record: MoveRecord = {
@@ -280,7 +286,19 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
   // Move pawn
   pawn.pathIndex = move.toPathIndex;
   if (pawn.state === 'home') pawn.state = 'active';
-  if (move.wouldFinish) pawn.state = 'finished';
+  if (move.wouldFinish) {
+    // Promote any existing 'center' pawn on this player to 'finished' (treasury)
+    const prevCenter = player.pawns.find(p => p.id !== pawn.id && p.state === 'center');
+    if (prevCenter) prevCenter.state = 'finished';
+    // Count how many pawns are now done (finished or about to be center)
+    const doneSoFar = player.pawns.filter(p => p.id !== pawn.id && (p.state === 'finished' || p.state === 'center')).length;
+    if (doneSoFar === 3) {
+      // This is the 4th pawn — move center pawn to treasury, this one goes directly to finished
+      pawn.state = 'finished';
+    } else {
+      pawn.state = 'center';
+    }
+  }
 
   // Handle capture
   let captured = false;
@@ -308,25 +326,13 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
   // Consume the pending roll used for this move
   newState.pendingRolls = newState.pendingRolls.slice(1);
 
-  // Capture or finish grants a bonus roll added to the pending queue
-  if (state.rules.allowExtraTurnOnCapture && captured) {
-    newState.extraTurn = true;
-    newState.pendingRolls = [];   // start a fresh extra turn
-    newState.phase = 'rolling';
-    newState.diceRolled = false;
-    newState.diceValue = null;
-    return newState;
-  }
-  if (move.wouldFinish) {
-    newState.extraTurn = true;
-    newState.pendingRolls = [];   // start a fresh extra turn
-    newState.phase = 'rolling';
-    newState.diceRolled = false;
-    newState.diceValue = null;
-    return newState;
-  }
+  // Mark extra turn for capture or finish — but use up remaining pending rolls first
+  const grantExtraTurn =
+    (state.rules.allowExtraTurnOnCapture && captured) ||
+    move.wouldFinish; // finishing a pawn always grants bonus roll
+  if (grantExtraTurn) newState.extraTurn = true;
 
-  // More pending rolls to use this turn?
+  // More pending rolls to use this turn? (check before granting bonus roll)
   if (newState.pendingRolls.length > 0) {
     const legal = computeLegalMoves({ ...newState, phase: 'moving' });
     if (legal.length > 0) {
@@ -335,6 +341,14 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
     }
     // No moves for remaining rolls — skip them
     newState.pendingRolls = [];
+  }
+
+  // If bonus earned, grant a fresh roll now
+  if (newState.extraTurn) {
+    newState.phase = 'rolling';
+    newState.diceRolled = false;
+    newState.diceValue = null;
+    return newState;
   }
 
   advanceTurn(newState);

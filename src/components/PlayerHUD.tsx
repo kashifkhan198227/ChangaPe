@@ -14,7 +14,7 @@ export default function PlayerHUD({ players, currentPlayerIndex }: PlayerHUDProp
     <View style={styles.container}>
       {players.map(player => {
         const isCurrent = player.index === currentPlayerIndex;
-        const finishedCount = player.pawns.filter(p => p.state === 'finished').length;
+        const finishedCount = player.pawns.filter(p => p.state === 'finished' || p.state === 'center').length;
         const homeCount = player.pawns.filter(p => p.state === 'home').length;
         const activeCount = player.pawns.filter(p => p.state === 'active').length;
 

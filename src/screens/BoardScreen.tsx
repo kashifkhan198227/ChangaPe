@@ -64,7 +64,7 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
       onVictory(gameState.winner);
       return;
     }
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const currentPlayer = gameState.players.find(p => p.index === gameState.currentPlayerIndex)!;
     if (currentPlayer.isAI && gameState.phase !== 'gameover') {
       clearTimer();
       triggerAIMove();
@@ -131,7 +131,7 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
       if (!gameState) return;
       if (gameState.phase !== 'moving') return;
       if (playerIndex !== gameState.currentPlayerIndex) return;
-      if (gameState.players[playerIndex].isAI) return;
+      if (gameState.players.find(p => p.index === playerIndex)?.isAI) return;
 
       const movesForPawn = legalMoves.filter(m => m.pawnId === pawnId);
       if (movesForPawn.length === 1) {
@@ -163,7 +163,7 @@ export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenP
 
   if (!gameState) return null;
 
-  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const currentPlayer = gameState.players.find(p => p.index === gameState.currentPlayerIndex)!;
   const canRoll = gameState.phase === 'rolling' && !currentPlayer.isAI;
   const canUndo = gameState.canUndo && gameState.phase === 'moving' && !currentPlayer.isAI;
 
