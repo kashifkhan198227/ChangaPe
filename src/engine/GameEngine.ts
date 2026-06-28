@@ -269,7 +269,7 @@ function findCapture(
 
 export function applyMove(state: GameState, move: LegalMove): GameState {
   const newState = deepClone(state);
-  newState.extraTurn = false; // reset — only re-set below if this move earns a bonus
+  newState.extraTurn = false; // clear stale flag; sentinel in pendingRolls grants the real bonus
   const player = newState.players.find(p => p.index === newState.currentPlayerIndex)!;
   const pawn = player.pawns.find(p => p.id === move.pawnId)!;
 
@@ -327,34 +327,17 @@ export function applyMove(state: GameState, move: LegalMove): GameState {
   // Consume the pending roll used for this move
   newState.pendingRolls = newState.pendingRolls.slice(1);
 
-  // Mark extra turn for capture or finish — but use up remaining pending rolls first
+  // Capture or finish earns a bonus roll — append sentinel (0) so it fires
+  // naturally after all currently-pending rolls are used.
   const grantExtraTurn =
     (state.rules.allowExtraTurnOnCapture && captured) ||
-    move.wouldFinish; // finishing a pawn always grants bonus roll
-  if (grantExtraTurn) newState.extraTurn = true;
-
-  // Use remaining pending rolls (skip any that have no legal moves)
-  if (newState.pendingRolls.length > 0) {
-    advanceToUsableRoll(newState);
-    if (newState.phase === 'moving') return newState;
-    // advanceToUsableRoll called advanceTurn — but if we have extraTurn, override
-    if (newState.extraTurn) {
-      newState.phase = 'rolling';
-      newState.diceRolled = false;
-      newState.diceValue = null;
-    }
-    return newState;
+    move.wouldFinish;
+  if (grantExtraTurn) {
+    newState.pendingRolls = [...newState.pendingRolls, BONUS_SENTINEL];
   }
 
-  // If bonus earned, grant a fresh roll now
-  if (newState.extraTurn) {
-    newState.phase = 'rolling';
-    newState.diceRolled = false;
-    newState.diceValue = null;
-    return newState;
-  }
-
-  advanceTurn(newState);
+  // Process remaining pending rolls (sentinel included)
+  advanceToUsableRoll(newState);
 
   return newState;
 }
@@ -436,9 +419,23 @@ export function performRoll(state: GameState): GameState {
   return newState;
 }
 
-/** Advance pendingRolls until one has legal moves, or forfeit if none do. */
+// Sentinel value in pendingRolls meaning "grant the player a fresh bonus roll"
+const BONUS_SENTINEL = 0;
+
+/** Advance pendingRolls until one has legal moves, or forfeit if none do.
+ *  A BONUS_SENTINEL (0) in the queue switches the player to rolling phase
+ *  instead of moving, so the bonus fires naturally after real rolls are used. */
 function advanceToUsableRoll(state: GameState): void {
   while (state.pendingRolls.length > 0) {
+    if (state.pendingRolls[0] === BONUS_SENTINEL) {
+      // Bonus earned earlier — give the player a fresh roll
+      state.pendingRolls = state.pendingRolls.slice(1);
+      state.extraTurn = true;
+      state.phase = 'rolling';
+      state.diceRolled = false;
+      state.diceValue = null;
+      return;
+    }
     const legal = computeLegalMoves({ ...state, phase: 'moving' });
     if (legal.length > 0) {
       state.phase = 'moving';
