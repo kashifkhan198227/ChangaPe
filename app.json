@@ -8,6 +8,8 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#1A0A00",
     "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#1A0A00"
     },
     "ios": {
@@ -17,16 +19,20 @@
       "package": "com.kashifkhan198227.changape",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#1A0A00",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#1A0A00"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "52d89353-ec56-4fec-99bc-8fe616b7e038"
+      }
+    },
+    "owner": "mkashifkhan82"
   }
 }
