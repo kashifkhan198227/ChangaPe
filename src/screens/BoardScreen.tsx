@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { COLORS, SPACING } from '../utils/theme';
 import { useGameStore } from '../store/gameStore';
+import { usePurchaseStore } from '../store/purchaseStore';
 import Board from '../components/Board';
 import DiceRoller from '../components/DiceRoller';
 import PlayerHUD from '../components/PlayerHUD';
@@ -22,9 +23,12 @@ const ROLL_NAMES: Record<number, string> = {
 interface BoardScreenProps {
   onPause: () => void;
   onVictory: (winnerIndex: number) => void;
+  onShop: () => void;
 }
 
-export default function BoardScreen({ onPause, onVictory }: BoardScreenProps) {
+export default function BoardScreen({ onPause, onVictory, onShop }: BoardScreenProps) {
+  const { has: hasPurchase } = usePurchaseStore();
+  const hasAutoMove = hasPurchase('auto_move');
   const {
     gameState,
     selectedPawnId,
@@ -83,9 +87,22 @@ export default function BoardScreen({ onPause, onVictory }: BoardScreenProps) {
       }, 1000);
       timerRef.current = setTimeout(() => {
         clearTimer();
-        // Forfeit: advance turn by making no move — store handles via skipTurn if available
-        Alert.alert('Time Up!', 'Your turn was forfeited.');
-        useGameStore.getState().forfeitTurn();
+        const state = useGameStore.getState();
+        if (hasAutoMove) {
+          // Auto-Move (premium): play best available move instead of forfeiting
+          const best = state.legalMoves[0];
+          if (best) state.makeMove(best);
+        } else {
+          Alert.alert(
+            'Time Up!',
+            'Your turn was forfeited.\n\nTip: Unlock Auto-Move (₹49) to auto-play the best move instead.',
+            [
+              { text: 'OK' },
+              { text: 'Unlock', onPress: onShop },
+            ]
+          );
+          state.forfeitTurn();
+        }
       }, 30000);
       return () => clearTimer();
     }

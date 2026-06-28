@@ -4,6 +4,7 @@ import { StatusBar, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useGameStore, SetupPlayer } from './src/store/gameStore';
 import { useSettingsStore } from './src/store/settingsStore';
+import { usePurchaseStore } from './src/store/purchaseStore';
 import { GameRules } from './src/engine/GameEngine';
 import { COLORS } from './src/utils/theme';
 import { appendGameHistory } from './src/utils/storage';
@@ -19,6 +20,7 @@ import StatisticsScreen from './src/screens/StatisticsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import ShopScreen from './src/screens/ShopScreen';
 
 type Screen =
   | 'home'
@@ -27,6 +29,7 @@ type Screen =
   | 'rules'
   | 'statistics'
   | 'leaderboard'
+  | 'shop'
   | 'settings'
   | 'about'
   | 'victory';
@@ -43,10 +46,12 @@ export default function App() {
 
   const { gameState, hasSavedGame, startGame, loadGame, resetGame, checkSavedGame } = useGameStore();
   const { loadAll, recordGameResult } = useSettingsStore();
+  const { load: loadPurchases } = usePurchaseStore();
 
   useEffect(() => {
     loadAll();
     checkSavedGame();
+    loadPurchases();
   }, []);
 
   const handleResumeGame = async () => {
@@ -68,7 +73,6 @@ export default function App() {
       const humanWon = humanPlayer?.index === winnerIndex;
       const captures = humanPlayer?.captureCount ?? 0;
       recordGameResult(humanWon, captures, hasAI);
-
       appendGameHistory({
         id: Date.now().toString(),
         date: new Date().toISOString(),
@@ -96,6 +100,8 @@ export default function App() {
     setScreen('home');
   };
 
+  const goBack = () => setScreen(pauseVisible ? 'board' : 'home');
+
   const renderScreen = () => {
     switch (screen) {
       case 'home':
@@ -107,6 +113,7 @@ export default function App() {
             onRules={() => setScreen('rules')}
             onStatistics={() => setScreen('statistics')}
             onLeaderboard={() => setScreen('leaderboard')}
+            onShop={() => setScreen('shop')}
             onSettings={() => setScreen('settings')}
             onAbout={() => setScreen('about')}
           />
@@ -117,13 +124,18 @@ export default function App() {
           <GameSetupScreen
             onStart={handleStartGame}
             onBack={() => setScreen('home')}
+            onShop={() => setScreen('shop')}
           />
         );
 
       case 'board':
         return (
           <>
-            <BoardScreen onPause={() => setPauseVisible(true)} onVictory={handleVictory} />
+            <BoardScreen
+              onPause={() => setPauseVisible(true)}
+              onVictory={handleVictory}
+              onShop={() => setScreen('shop')}
+            />
             <PauseScreen
               visible={pauseVisible}
               onResume={() => setPauseVisible(false)}
@@ -143,11 +155,12 @@ export default function App() {
             onPlayAgain={handlePlayAgain}
             onNewGame={() => setScreen('setup')}
             onHome={goHome}
+            onShop={() => setScreen('shop')}
           />
         );
 
       case 'rules':
-        return <RulesScreen onBack={() => setScreen(pauseVisible ? 'board' : 'home')} />;
+        return <RulesScreen onBack={goBack} />;
 
       case 'statistics':
         return <StatisticsScreen onBack={() => setScreen('home')} />;
@@ -155,8 +168,11 @@ export default function App() {
       case 'leaderboard':
         return <LeaderboardScreen onBack={() => setScreen('home')} />;
 
+      case 'shop':
+        return <ShopScreen onBack={() => setScreen('home')} />;
+
       case 'settings':
-        return <SettingsScreen onBack={() => setScreen(pauseVisible ? 'board' : 'home')} />;
+        return <SettingsScreen onBack={goBack} />;
 
       case 'about':
         return <AboutScreen onBack={() => setScreen('home')} />;
@@ -175,8 +191,5 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background },
 });

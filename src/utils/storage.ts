@@ -5,6 +5,7 @@ const KEYS = {
   STATS: '@changape_stats',
   SAVED_GAME: '@changape_saved_game',
   GAME_HISTORY: '@changape_history',
+  PURCHASES: '@changape_purchases',
 };
 
 export interface AppSettings {
@@ -134,4 +135,44 @@ export async function appendGameHistory(entry: GameHistoryEntry): Promise<void> 
 
 export async function clearGameHistory(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.GAME_HISTORY);
+}
+
+// ── Purchases ─────────────────────────────────────────────────────────────────
+
+export type PurchaseId =
+  | 'auto_move'     // ₹49 — auto-pick best move when 30s timer expires
+  | 'ai_pro'        // ₹49 — unlocks Medium & Hard AI
+  | 'remove_ads'    // ₹99 — removes all ads
+  | 'theme_royal'   // ₹29 — Royal dark-purple theme
+  | 'theme_jade';   // ₹29 — Jade green theme
+
+export interface PurchaseRecord {
+  purchasedIds: PurchaseId[];
+}
+
+export const PURCHASE_CATALOG: Array<{
+  id: PurchaseId;
+  title: string;
+  description: string;
+  price: number; // INR
+  icon: string;
+}> = [
+  { id: 'auto_move',   title: 'Auto-Move',      description: 'When your 30s timer runs out, the best move is played automatically instead of forfeiting your turn.', price: 49,  icon: '⚡' },
+  { id: 'ai_pro',      title: 'AI Pro',          description: 'Unlock Medium and Hard AI opponents for a real challenge.', price: 49,  icon: '🤖' },
+  { id: 'remove_ads',  title: 'Remove Ads',      description: 'Remove all banner ads from the game forever.', price: 99,  icon: '🚫' },
+  { id: 'theme_royal', title: 'Royal Theme',     description: 'A regal dark-purple and gold board skin.', price: 29,  icon: '👑' },
+  { id: 'theme_jade',  title: 'Jade Theme',      description: 'A serene green and ivory board skin.', price: 29,  icon: '💚' },
+];
+
+export async function loadPurchases(): Promise<PurchaseRecord> {
+  try {
+    const data = await AsyncStorage.getItem(KEYS.PURCHASES);
+    return data ? JSON.parse(data) : { purchasedIds: [] };
+  } catch {
+    return { purchasedIds: [] };
+  }
+}
+
+export async function savePurchases(record: PurchaseRecord): Promise<void> {
+  await AsyncStorage.setItem(KEYS.PURCHASES, JSON.stringify(record));
 }

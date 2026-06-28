@@ -122,12 +122,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    backgroundColor: '#1E1E2E',
+    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderWidth: 1.5,
-    borderColor: '#444',
+    borderColor: COLORS.surfaceElevated,
     flex: 1,
   },
   resultStripSpecial: {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   diceName: {
-    color: '#ccc',
+    color: COLORS.textSecondary,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
   },
   placeholderText: {
-    color: '#555',
+    color: COLORS.textMuted,
     fontSize: 18,
     flex: 1,
     textAlign: 'center',

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/theme';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../engine/BoardLayout';
 import { GameState } from '../engine/GameEngine';
+import AdBanner from '../components/AdBanner';
 
 interface VictoryScreenProps {
   gameState: GameState;
@@ -10,6 +11,7 @@ interface VictoryScreenProps {
   onPlayAgain: () => void;
   onNewGame: () => void;
   onHome: () => void;
+  onShop: () => void;
 }
 
 export default function VictoryScreen({
@@ -18,6 +20,7 @@ export default function VictoryScreen({
   onPlayAgain,
   onNewGame,
   onHome,
+  onShop,
 }: VictoryScreenProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const confettiAnim = useRef(new Animated.Value(0)).current;
@@ -79,6 +82,7 @@ export default function VictoryScreen({
           </View>
         </View>
       </Animated.View>
+      <AdBanner onShop={onShop} />
     </View>
   );
 }
@@ -90,6 +94,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
+    paddingBottom: SPACING.sm,
   },
   card: {
     backgroundColor: COLORS.surface,

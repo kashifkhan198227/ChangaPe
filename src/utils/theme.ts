@@ -1,62 +1,62 @@
-// LockiVault-inspired dark purple theme for Changa Pe
+// Changa Pe — warm traditional mahogany board theme
 
 export const COLORS = {
-  // Board — black background, white grid
-  boardBackground: '#000000',
-  boardBorder: '#ffffff',
-  boardLines: '#ffffff',
-  outerSquare: '#000000',      // all cells black — grid lines are the visual separator
-  outerSquareAlt: '#000000',
-  safeSquare: '#000000',
-  safeSquareBorder: '#ffffff',
-  centerSquare: '#000000',     // center also black; white X marks it
-  centerBorder: '#ffffff',
-  innerPath: '#000000',
+  // ── Board ──────────────────────────────────────────────────────────────────
+  boardBackground: '#2C1208',     // dark mahogany wood
+  boardBorder: '#C8962A',         // gold border
+  boardLines: '#7A5918',          // dark-gold grid lines (cell borders)
+  outerSquare: '#3D1A0A',         // medium mahogany
+  outerSquareAlt: '#341408',
+  safeSquare: '#18321A',          // dark forest-green safe squares
+  safeSquareBorder: '#4CAF50',
+  centerSquare: '#1A0C05',        // deepest mahogany center
+  centerBorder: '#C8962A',
+  innerPath: '#291208',           // slightly darker inner ring
 
-  // Players — vivid distinct colors that pop on dark background
-  playerRed: '#EF4444',
-  playerRedLight: '#F87171',
-  playerBlue: '#3B82F6',
-  playerBlueLight: '#60A5FA',
-  playerGreen: '#10B981',
-  playerGreenLight: '#34D399',
-  playerYellow: '#F59E0B',
-  playerYellowLight: '#FCD34D',
+  // ── Players ────────────────────────────────────────────────────────────────
+  playerRed: '#E53935',
+  playerRedLight: '#EF5350',
+  playerBlue: '#1E88E5',
+  playerBlueLight: '#42A5F5',
+  playerGreen: '#43A047',
+  playerGreenLight: '#66BB6A',
+  playerYellow: '#FDD835',
+  playerYellowLight: '#FFEE58',
 
-  // UI
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  secondary: '#6D28D9',
-  accent: '#A78BFA',
-  background: '#000000',
-  surface: '#111111',
-  surfaceElevated: '#1A1A1A',
-  card: '#1A1A1A',
+  // ── UI chrome ──────────────────────────────────────────────────────────────
+  primary: '#C8962A',             // gold/amber — main interactive colour
+  primaryLight: '#D4AF3A',
+  secondary: '#7A1A1A',           // deep crimson accent
+  accent: '#D4A017',
+  background: '#0D0705',          // near-black warm (screen background)
+  surface: '#1C1007',             // dark walnut card
+  surfaceElevated: '#2A1A0A',     // lighter walnut for sub-cards / dividers
+  card: '#2A1A0A',
 
-  // Text
-  textPrimary: '#F1F0FF',      // TextPrimary
-  textSecondary: '#9B8EC4',    // TextSecondary
-  textMuted: '#5A5480',        // TextMuted
-  textDark: '#0A0A1A',
+  // ── Text ───────────────────────────────────────────────────────────────────
+  textPrimary: '#F5E6C8',         // parchment / ivory
+  textSecondary: '#C8A96E',       // warm tan
+  textMuted: '#7A6040',           // subdued tan
+  textDark: '#1C0D05',
 
-  // Status
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  // ── Status ─────────────────────────────────────────────────────────────────
+  success: '#43A047',
+  warning: '#FDD835',
+  error: '#E53935',
+  info: '#1E88E5',
 
-  // Highlights
-  legalMove: '#10B981',        // Success green
-  selectedPawn: '#8B5CF6',     // Brand purple
-  highlight: 'rgba(139,92,246,0.4)',
+  // ── Highlights ─────────────────────────────────────────────────────────────
+  legalMove: '#4CAF50',           // bright green for legal-move cell tint
+  selectedPawn: '#C8962A',        // gold ring on selected pawn
+  highlight: 'rgba(200,150,42,0.4)',
 
-  // Decorative
-  gold: '#F59E0B',
-  goldDark: '#D97706',
-  copper: '#A78BFA',
-  ivory: '#F1F0FF',
+  // ── Decorative ─────────────────────────────────────────────────────────────
+  gold: '#D4A017',
+  goldDark: '#B8860B',
+  copper: '#C87533',
+  ivory: '#F5E6C8',
   saffron: '#F59E0B',
-  mehendi: '#10B981',
+  mehendi: '#43A047',
 };
 
 export const FONTS = {
@@ -86,21 +86,21 @@ export const SHADOWS = {
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 4,
     elevation: 4,
   },
   lg: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 8,
   },

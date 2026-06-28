@@ -6,35 +6,41 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
+  Alert,
 } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/theme';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../engine/BoardLayout';
 import { GameRules, DEFAULT_RULES } from '../engine/GameEngine';
 import { SetupPlayer } from '../store/gameStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { usePurchaseStore } from '../store/purchaseStore';
 
 type PlayerType = 'human' | 'easy' | 'medium' | 'hard' | 'none';
 
 interface GameSetupScreenProps {
   onStart: (numPlayers: 2 | 3 | 4, players: SetupPlayer[], rules: GameRules) => void;
   onBack: () => void;
+  onShop: () => void;
 }
 
 const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
   human: '👤 Human',
-  easy: '🤖 AI Easy',
-  medium: '🤖 AI Medium',
-  hard: '🤖 AI Hard',
+  easy: '🤖 Easy AI',
+  medium: '🤖 Medium AI',
+  hard: '🤖 Hard AI',
   none: '✗ Disabled',
 };
 
 const PLAYER_TYPES: PlayerType[] = ['human', 'easy', 'medium', 'hard', 'none'];
+const PRO_TYPES: PlayerType[] = ['medium', 'hard'];
 
-export default function GameSetupScreen({ onStart, onBack }: GameSetupScreenProps) {
+export default function GameSetupScreen({ onStart, onBack, onShop }: GameSetupScreenProps) {
   const { settings } = useSettingsStore();
+  const { has } = usePurchaseStore();
+  const hasAIPro = has('ai_pro');
+
   const [numPlayers, setNumPlayers] = useState<2 | 3 | 4>(2);
   const [playerTypes, setPlayerTypes] = useState<PlayerType[]>(['human', 'easy', 'none', 'none']);
-  // BUG-5: initialize rules from settings so user's saved preferences apply
   const [rules, setRules] = useState<GameRules>({ ...DEFAULT_RULES, ...settings.rules });
 
   const cyclePlayerType = (index: number) => {
@@ -45,6 +51,18 @@ export default function GameSetupScreen({ onStart, onBack }: GameSetupScreenProp
       : PLAYER_TYPES;
     const nextIdx = (currentIdx + 1) % available.length;
     const next = available[nextIdx];
+
+    if (PRO_TYPES.includes(next) && !hasAIPro) {
+      Alert.alert(
+        'AI Pro Required',
+        'Medium and Hard AI require the AI Pro upgrade (₹49).',
+        [
+          { text: 'Not Now', style: 'cancel' },
+          { text: 'Unlock AI Pro', onPress: onShop },
+        ]
+      );
+      return;
+    }
 
     const updated = [...playerTypes];
     updated[index] = next;
@@ -108,9 +126,12 @@ export default function GameSetupScreen({ onStart, onBack }: GameSetupScreenProp
                 <View style={[styles.colorBadge, { backgroundColor: PLAYER_COLORS[i] }]} />
                 <Text style={styles.playerName}>{PLAYER_NAMES[i]}</Text>
                 <TouchableOpacity
-                  style={styles.typeButton}
+                  style={[styles.typeButton, PRO_TYPES.includes(playerTypes[i]) && !hasAIPro && styles.typeButtonLocked]}
                   onPress={() => cyclePlayerType(i)}
                 >
+                  {PRO_TYPES.includes(playerTypes[i]) && !hasAIPro && (
+                    <Text style={styles.lockIcon}>🔒</Text>
+                  )}
                   <Text style={styles.typeText}>{PLAYER_TYPE_LABELS[playerTypes[i]]}</Text>
                 </TouchableOpacity>
               </View>
@@ -289,7 +310,14 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.textMuted,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
+  typeButtonLocked: {
+    borderColor: COLORS.warning + '88',
+  },
+  lockIcon: { fontSize: 11 },
   typeText: {
     color: COLORS.textSecondary,
     fontSize: 12,

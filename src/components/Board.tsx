@@ -134,9 +134,11 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
         const pawnsHere = pawnPositions.get(cellKey) || [];
 
         const hasCowry = COWRY_CELLS.has(`${cell.row}_${cell.col}`);
+        const isSafeOuter = cell.isOuter && [0,4,8,12].includes(cell.outerIndex);
         let bgColor = COLORS.outerSquare;
         if (cell.isCenter) bgColor = COLORS.centerSquare;
         else if (cell.isInner) bgColor = COLORS.innerPath;
+        else if (isSafeOuter) bgColor = COLORS.safeSquare;
 
         return (
           <TouchableOpacity
@@ -149,9 +151,10 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
                 width: CELL,
                 height: CELL,
                 backgroundColor: bgColor,
-                borderColor: COLORS.boardBorder,
-                borderWidth: 1,
+                borderColor: COLORS.boardLines,
+                borderWidth: 0.5,
               },
+              isSafeOuter && styles.safeCell,
               isHighlighted && styles.highlighted,
             ]}
             onPress={() => onCellPress(cell.row, cell.col)}
@@ -164,12 +167,12 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
 
             {/* X on outer entry squares */}
             {cell.entryPlayer !== null && (
-              <CrossMark size={CELL} color="#ffffff" thickness={2.5} />
+              <CrossMark size={CELL} color={COLORS.gold} thickness={2.5} />
             )}
 
             {/* X on center square */}
             {cell.isCenter && (
-              <CrossMark size={CELL - 4} color="#ffffff" thickness={3} />
+              <CrossMark size={CELL - 4} color={COLORS.gold} thickness={3} />
             )}
 
 
@@ -215,7 +218,7 @@ export default function Board({ players, legalMoves, selectedPawnId, currentPlay
                   borderRadius: sz / 2,
                   backgroundColor: color,
                   borderWidth: isLegal ? 2.5 : 1.5,
-                  borderColor: isLegal ? '#FFD700' : 'rgba(255,255,255,0.5)',
+                  borderColor: isLegal ? COLORS.gold : 'rgba(245,230,200,0.4)',
                 },
               ]}
             >
@@ -260,9 +263,9 @@ const styles = StyleSheet.create({
   board: {
     position: 'relative',
     backgroundColor: COLORS.boardBackground,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: COLORS.boardBorder,
-    borderRadius: 2,
+    borderRadius: 3,
   },
   cell: {
     position: 'absolute',
@@ -274,11 +277,15 @@ const styles = StyleSheet.create({
     height: CELL * 0.38,
     borderRadius: CELL * 0.19,
     borderWidth: 2.5,
-    borderColor: '#ffffff',
-    backgroundColor: 'transparent',
+    borderColor: COLORS.gold,
+    backgroundColor: COLORS.gold + '22',
+  },
+  safeCell: {
+    borderColor: COLORS.safeSquareBorder + '66',
+    borderWidth: 1,
   },
   highlighted: {
-    backgroundColor: COLORS.legalMove + '70',
+    backgroundColor: COLORS.legalMove + '55',
     borderColor: COLORS.legalMove,
     borderWidth: 2,
   },
