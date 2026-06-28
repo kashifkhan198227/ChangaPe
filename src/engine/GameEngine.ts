@@ -269,6 +269,7 @@ function findCapture(
 
 export function applyMove(state: GameState, move: LegalMove): GameState {
   const newState = deepClone(state);
+  newState.extraTurn = false; // reset — only re-set below if this move earns a bonus
   const player = newState.players.find(p => p.index === newState.currentPlayerIndex)!;
   const pawn = player.pawns.find(p => p.id === move.pawnId)!;
 
