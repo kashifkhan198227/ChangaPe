@@ -62,7 +62,6 @@ export default function HomeScreen({
                 />
               );
             })}
-            ))}
           </View>
         ))}
       </View>
@@ -159,26 +158,28 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   boardCell: {
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     backgroundColor: COLORS.outerSquare,
-    borderRadius: 1,
-  },
-  outerCell: {
-    backgroundColor: COLORS.outerSquare,
+    borderRadius: 2,
     borderWidth: 0.5,
     borderColor: COLORS.boardLines,
   },
+  outerCell: {
+    backgroundColor: '#5A2A10',
+  },
   innerCell: {
-    backgroundColor: COLORS.innerPath,
-    borderWidth: 0.5,
-    borderColor: COLORS.boardLines + '99',
+    backgroundColor: '#3D1A0A',
+    borderColor: '#7A5918AA',
   },
   centerCell: {
-    backgroundColor: COLORS.centerSquare,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.gold,
+    borderWidth: 1,
   },
   cornerCell: {
     backgroundColor: COLORS.safeSquare,
+    borderColor: COLORS.safeSquareBorder + '99',
   },
   menu: {
     width: '100%',
